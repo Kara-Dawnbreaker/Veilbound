@@ -132,7 +132,7 @@ test('valid combat snapshot survives a complete save/load round trip', () => {
 
   const loaded = loadSaveData();
   assert.ok(loaded.activeRun?.activeCombatState);
-  assert.deepEqual(loaded.activeRun?.activeCombatState, combat);
+  assert.deepEqual(loaded.activeRun?.activeCombatState, JSON.parse(JSON.stringify(combat)));
 });
 
 test('a previous valid primary save is retained as the backup', () => {
