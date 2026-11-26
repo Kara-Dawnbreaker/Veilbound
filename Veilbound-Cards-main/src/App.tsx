@@ -936,8 +936,17 @@ export default function App() {
   };
 
   const handleSelectEnemy = useCallback((uid: string) => {
-    setCombat((prev) => (prev ? selectEnemyTarget(prev, uid) : prev));
-  }, []);
+    if (!combat) return;
+    const nextCombat = selectEnemyTarget(combat, uid);
+    if (nextCombat === combat) return;
+    setCombat(nextCombat);
+    if (save.activeRun) {
+      persistSave({
+        ...save,
+        activeRun: { ...save.activeRun, activeCombatState: nextCombat },
+      });
+    }
+  }, [combat, save, persistSave]);
 
   // =========================================================================
   // REWARD, SHOP, REST & EVENT HANDLERS
