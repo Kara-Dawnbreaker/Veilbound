@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Compass,
@@ -20,7 +20,6 @@ import { getStanceDef } from '../data/stances';
 import { getEffectiveCardDef, previewCardCombatState } from '../engine/combatEngine';
 import { getArchetypeLabel } from '../engine/enemyAI';
 import type { CombatEnemy, CombatState, GameSettings, RunState, StatusId } from '../types/game';
-import { BattleCanvas } from './BattleCanvas';
 import { CardView } from './CardView';
 
 interface BattleViewProps {
@@ -34,6 +33,10 @@ interface BattleViewProps {
   onUseHeroAbility?: () => void;
   onEndTurn: () => void;
 }
+
+const BattleCanvas = lazy(() =>
+  import('./BattleCanvas').then((module) => ({ default: module.BattleCanvas }))
+);
 
 const STATUS_META: Record<StatusId, { label: string; hint: string }> = {
   burn: { label: 'Burn', hint: 'Takes Burn damage at end of turn, then decays by 1.' },
@@ -485,15 +488,23 @@ export function BattleView({
         )
       )}
 
-      {/* Phaser 2D Animated Battlefield */}
-      <BattleCanvas
-        regionId={run.regionId}
-        characterId={run.characterId}
-        auraStyle={run.selectedAuraStyle}
-        combatState={combat}
-        settings={settings}
-        onSelectEnemy={handleEnemyClick}
-      />
+      {/* Load the heavyweight Phaser renderer only when a battle is entered. */}
+      <Suspense
+        fallback={
+          <div className="relative w-full h-[215px] sm:h-[300px] lg:h-[370px] rounded-lg overflow-hidden border border-[#232734] bg-[#0B0C10] flex items-center justify-center text-xs text-[#9499A8]">
+            Preparing battlefield…
+          </div>
+        }
+      >
+        <BattleCanvas
+          regionId={run.regionId}
+          characterId={run.characterId}
+          auraStyle={run.selectedAuraStyle}
+          combatState={combat}
+          settings={settings}
+          onSelectEnemy={handleEnemyClick}
+        />
+      </Suspense>
 
       {/* Action Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 px-1">
