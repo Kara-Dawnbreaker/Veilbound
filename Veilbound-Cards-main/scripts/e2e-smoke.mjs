@@ -31,6 +31,10 @@ try {
   await desktop.getByRole('button', { name: 'End Turn' }).waitFor();
   await desktop.getByRole('button', { name: 'End Turn' }).click();
   await desktop.getByText('Turn 2').waitFor();
+  await desktop.waitForFunction(() => {
+    const saved = JSON.parse(localStorage.getItem('veilbound_ashen_crown_save') ?? 'null');
+    return saved?.activeRun?.activeCombatState?.turn === 2;
+  });
   const hpBeforeReload = await desktop.getByText(/^HP \\d+\\/\\d+$/).first().innerText();
 
   await desktop.reload({ waitUntil: 'networkidle' });
