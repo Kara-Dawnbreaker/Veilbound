@@ -19,7 +19,7 @@ try {
   await desktop.evaluate(() => navigator.serviceWorker.ready);
   await desktop.reload({ waitUntil: 'networkidle' });
   await desktop.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
-  const network = await desktop.context.newCDPSession(desktop);
+  const network = await desktop.context().newCDPSession(desktop);
   await network.send('Network.enable');
   await network.send('Network.emulateNetworkConditions', {
     offline: true,
