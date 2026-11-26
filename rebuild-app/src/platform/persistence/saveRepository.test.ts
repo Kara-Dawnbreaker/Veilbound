@@ -49,3 +49,33 @@ test('save storage uses a namespaced key', () => {
 test('unknown schema versions are rejected', () => {
   assert.equal(decodeSave(JSON.stringify({ schemaVersion: 999 })), null);
 });
+
+
+test('current saves normalize unsafe numeric values and duplicate IDs', () => {
+  const normalized = decodeSave(JSON.stringify({
+    schemaVersion: 1,
+    savedAt: '2026-01-01T00:00:00.000Z',
+    settings: { musicVolume: -4, effectsVolume: 8, reducedMotion: true },
+    profile: {
+      soulShards: 12.9,
+      unlockedHeroIds: ['vaelen', 'vaelen', 'test-hero'],
+      discoveredEntries: ['wolf', 'wolf']
+    }
+  }));
+  assert.equal(normalized?.settings.musicVolume, 0);
+  assert.equal(normalized?.settings.effectsVolume, 1);
+  assert.equal(normalized?.settings.reducedMotion, true);
+  assert.equal(normalized?.profile.soulShards, 12);
+  assert.deepEqual(normalized?.profile.unlockedHeroIds, ['vaelen', 'test-hero']);
+  assert.deepEqual(normalized?.profile.discoveredEntries, ['wolf']);
+});
+
+test('storage read failures and write failures are handled safely', () => {
+  const failingStorage: StorageLike = {
+    getItem() { throw new Error('blocked'); },
+    setItem() { throw new Error('quota'); },
+    removeItem() { throw new Error('blocked'); }
+  };
+  assert.equal(loadSave(failingStorage), null);
+  assert.equal(writeSave(failingStorage, DEFAULT_SETTINGS, DEFAULT_PROFILE), false);
+});
