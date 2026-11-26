@@ -30,6 +30,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // The Phaser + React production bundle currently exceeds Workbox's 2 MiB default.
+        // Cache it as a whole so the installed app can launch offline after first load.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp,woff2}'],
       },
     }),
