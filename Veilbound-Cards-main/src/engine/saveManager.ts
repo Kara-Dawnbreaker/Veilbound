@@ -306,6 +306,17 @@ function migrateAndSanitize(raw: unknown): SaveDataV1 {
   };
 }
 
+function getStoredSaveVersion(raw: string | null): number | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || typeof parsed.version !== 'number' || !Number.isFinite(parsed.version)) return null;
+    return parsed.version;
+  } catch {
+    return null;
+  }
+}
+
 function parseStoredSave(raw: string | null): SaveDataV1 | null {
   if (!raw) return null;
   try {
@@ -317,6 +328,7 @@ function parseStoredSave(raw: string | null): SaveDataV1 | null {
     ) {
       return null;
     }
+    if ((parsed as Partial<SaveDataV1>).version! > CURRENT_SAVE_VERSION) return null;
     return migrateAndSanitize(parsed);
   } catch {
     return null;
@@ -328,6 +340,14 @@ export function loadSaveData(): SaveDataV1 {
     const raw = localStorage.getItem(STORAGE_KEY);
     const currentSave = parseStoredSave(raw);
     if (currentSave) return currentSave;
+
+    // Never replace a save written by a newer game version with an older schema.
+    // A compatible backup may be used for this session, but the newer primary
+    // remains untouched until this build understands its version.
+    if ((getStoredSaveVersion(raw) ?? 0) > CURRENT_SAVE_VERSION) {
+      const futureVersionBackup = parseStoredSave(localStorage.getItem(BACKUP_STORAGE_KEY));
+      return futureVersionBackup ?? createDefaultSaveData();
+    }
 
     const backupRaw = localStorage.getItem(BACKUP_STORAGE_KEY);
     const backupSave = parseStoredSave(backupRaw);
@@ -359,6 +379,7 @@ export function saveGameData(data: SaveDataV1): void {
     };
     const serialized = JSON.stringify(payload);
     const previousRaw = localStorage.getItem(STORAGE_KEY);
+    if ((getStoredSaveVersion(previousRaw) ?? 0) > CURRENT_SAVE_VERSION) return;
     localStorage.setItem(STORAGE_KEY, serialized);
 
     // Keep the previous valid save as a recovery point, but never replace a
