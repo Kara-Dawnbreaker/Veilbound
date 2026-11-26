@@ -47,7 +47,7 @@ jobs:
             curl --fail --silent --output /dev/null "http://127.0.0.1:4173/$asset"
           done
       - name: Install browser test runner
-        run: npm install --no-save --package-lock=false playwright
+        run: npm install --no-save --package-lock=false --legacy-peer-deps playwright
       - name: Install Chromium for browser smoke tests
         run: npx playwright install --with-deps chromium
       - name: Exercise desktop and mobile app flows
