@@ -230,25 +230,27 @@ export default function App() {
       discoveredCards: collectDiscoveredCardIdsFromSave(next),
     };
     setSave(enriched);
-    saveGameData(enriched);
   }, []);
+
+  // Persist committed React state, never from inside a state updater. React may
+  // invoke updater functions more than once in development Strict Mode.
+  useEffect(() => {
+    saveGameData(save);
+  }, [save]);
 
   const updateActiveRun = useCallback(
     (updater: (run: RunState) => RunState, extraSavePatch?: Partial<SaveDataV1>) => {
       setSave((prev) => {
         if (!prev.activeRun) return prev;
-        const nextRun = updater(prev.activeRun);
         const draftSave: SaveDataV1 = {
           ...prev,
           ...(extraSavePatch ?? {}),
-          activeRun: nextRun,
+          activeRun: updater(prev.activeRun),
         };
-        const nextSave: SaveDataV1 = {
+        return {
           ...draftSave,
           discoveredCards: collectDiscoveredCardIdsFromSave(draftSave),
         };
-        saveGameData(nextSave);
-        return nextSave;
       });
     },
     []
@@ -380,6 +382,13 @@ export default function App() {
     audioEngine.play('click');
     const run = save.activeRun;
     if (run.currentScreen === 'COMBAT' && run.activeCombatEncounterIds) {
+      if (run.activeCombatState) {
+        setCombat(run.activeCombatState);
+        setIsResolvingTurn(false);
+        setTurnStepLabel(null);
+        setScreen(run.currentScreen);
+        return;
+      }
       const heroOpts = getHeroCombatOptions(save, run.characterId);
       const worldMods = getRegionWorldModifiers(save, run.regionId);
       const initial = initializeCombat(
@@ -397,6 +406,8 @@ export default function App() {
         }
       );
       setCombat(initial);
+      // Backward compatibility for saves created before combat snapshots existed.
+      persistSave({ ...save, activeRun: { ...run, activeCombatState: initial } });
     }
     setScreen(run.currentScreen);
   };
@@ -421,6 +432,7 @@ export default function App() {
       ...run,
       currentScreen: 'COMBAT',
       activeCombatEncounterIds: encounterIds,
+      activeCombatState: undefined,
       activeCombatModifier: combatModifier,
       activeIsBoss: isBoss,
       activeIsElite: isElite,
@@ -728,6 +740,15 @@ export default function App() {
     if (!save.activeRun) return;
     const run = save.activeRun;
 
+    // Save every non-terminal combat action so refresh/close restores the same
+    // hand, piles, enemy HP/intents, energy, statuses, and turn counters.
+    if (nextCombat.phase !== 'VICTORY' && nextCombat.phase !== 'DEFEAT') {
+      persistSave({
+        ...save,
+        activeRun: { ...run, hp: nextCombat.playerHp, activeCombatState: nextCombat },
+      });
+    }
+
     if (nextCombat.phase === 'VICTORY') {
       const finishDelay = Math.max(700, maxDelayMs + COMBAT_TIMING.VICTORY_PADDING_MS * speedMult);
       audioEngine.play('victory', maxDelayMs / 1000);
@@ -784,6 +805,7 @@ export default function App() {
           currentScreen: 'REWARD',
           activeReward: reward,
           activeCombatEncounterIds: undefined,
+          activeCombatState: undefined,
           activeCombatModifier: undefined,
           activeIsLegendary: undefined,
           activeIsSecretBoss: undefined,
