@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { CHARACTERS } from '../data/characters';
+import { REGIONS } from '../data/regions';
+import { startNewRun } from './runManager';
 import {
   createDefaultSaveData,
   loadSaveData,
@@ -56,6 +59,29 @@ test('malformed nested active run is rejected without crashing the save load', (
     veilbound_ashen_crown_save: JSON.stringify(save),
   });
   assert.equal(loadSaveData().activeRun, null);
+});
+
+test('damaged combat snapshot does not discard an otherwise valid run', () => {
+  const save = createDefaultSaveData();
+  const { nextSave } = startNewRun(
+    save,
+    CHARACTERS[0].id,
+    REGIONS[0].id,
+    'standard',
+    'SAVE-RECOVERY'
+  );
+  const run = nextSave.activeRun!;
+  (run as unknown as { activeCombatState: unknown }).activeCombatState = {
+    phase: 'not-a-combat-phase',
+    enemies: 'damaged',
+  };
+  installMemoryStorage({
+    veilbound_ashen_crown_save: JSON.stringify(nextSave),
+  });
+  const loaded = loadSaveData();
+  assert.ok(loaded.activeRun);
+  assert.equal(loaded.activeRun?.activeCombatState, undefined);
+  assert.equal(loaded.activeRun?.runId, run.runId);
 });
 
 test('a previous valid primary save is retained as the backup', () => {
