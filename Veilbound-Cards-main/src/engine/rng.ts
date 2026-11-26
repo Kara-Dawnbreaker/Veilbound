@@ -36,6 +36,9 @@ export class SeededRNG {
 
   /** Picks a random item from non-empty array */
   pick<T>(items: readonly T[]): T {
+    if (items.length === 0) {
+      throw new RangeError('SeededRNG.pick requires a non-empty collection.');
+    }
     return items[Math.floor(this.next() * items.length)];
   }
 
