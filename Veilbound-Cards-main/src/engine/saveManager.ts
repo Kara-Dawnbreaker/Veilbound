@@ -10,6 +10,8 @@ import type {
   FactionId,
   GameSettings,
   SaveDataV1,
+  RunState,
+  CombatState,
   WorldState,
 } from '../types/game';
 
@@ -120,6 +122,63 @@ export function createDefaultSaveData(): SaveDataV1 {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, any> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+const VALID_SCREENS = new Set([
+  'MAIN_MENU', 'CHARACTER_SELECT', 'SANCTUARY', 'BESTIARY', 'EXPEDITION_MAP',
+  'COMBAT', 'REWARD', 'SHOP', 'REST', 'EVENT', 'TREASURE', 'SHRINE', 'LIBRARY',
+  'CAMP', 'COMPANION_ENCOUNTER', 'CURSED_ALTAR', 'CROSSROADS', 'RARE_ENCOUNTER', 'RUN_END',
+]);
+
+function isCardInstanceList(value: unknown): boolean {
+  return Array.isArray(value) && value.every((card) =>
+    isRecord(card) && typeof card.uid === 'string' && typeof card.defId === 'string' &&
+    typeof card.upgraded === 'boolean' &&
+    (card.costOverride === undefined || (typeof card.costOverride === 'number' && Number.isFinite(card.costOverride)))
+  );
+}
+
+function isCombatSnapshot(value: unknown): value is CombatState {
+  if (!isRecord(value)) return false;
+  const numericFields = [
+    'turn', 'playerHp', 'playerMaxHp', 'playerBlock', 'energy', 'maxEnergy',
+    'nextTurnBonusEnergy', 'cardsPlayedThisTurn', 'attacksPlayedThisTurn',
+    'playerAttacksLastTurn', 'playerSkillsThisTurn', 'playerSkillsLastTurn',
+    'playerBlocksLastTurn', 'blockGainedThisTurn', 'alliesSlainCount',
+    'heroAbilityCooldown', 'heroAbilityUsesLeft',
+  ];
+  if (!numericFields.every((key) => typeof value[key] === 'number' && Number.isFinite(value[key]))) return false;
+  if (!['PLAYER_TURN', 'RESOLVING', 'ENEMY_TURN', 'VICTORY', 'DEFEAT'].includes(value.phase)) return false;
+  if (!['neutral', 'bulwark', 'wrath', 'eclipse', 'alchemical'].includes(value.activeStance)) return false;
+  if (!['drawPile', 'hand', 'discardPile', 'exhaustPile', 'enemies', 'companions', 'activeTraps', 'activeReactions', 'delayedEffects', 'combatLog', 'pendingVisualEvents', 'activeTriggers'].every((key) => Array.isArray(value[key]))) return false;
+  if (!['playerStatuses'].every((key) => isRecord(value[key]))) return false;
+  if (!['isBoss', 'isElite', 'heroAbilityUpgraded', 'heroAbilityAlternate', 'passiveAmplified'].every((key) => typeof value[key] === 'boolean')) return false;
+  return ['drawPile', 'hand', 'discardPile', 'exhaustPile'].every((key) => isCardInstanceList(value[key]));
+}
+
+function isValidRunState(value: unknown): value is RunState {
+  if (!isRecord(value)) return false;
+  if (typeof value.runId !== 'string' || typeof value.seed !== 'string') return false;
+  if (!CHARACTERS.some((character) => character.id === value.characterId)) return false;
+  if (!REGIONS.some((region) => region.id === value.regionId)) return false;
+  if (!['standard', 'penance', 'eclipse'].includes(value.difficulty)) return false;
+  if (!VALID_SCREENS.has(value.currentScreen)) return false;
+  for (const key of ['hp', 'maxHp', 'gold', 'earnedShards', 'turnsTakenTotal', 'enemiesDefeated', 'nodesCleared']) {
+    if (typeof value[key] !== 'number' || !Number.isFinite(value[key]) || value[key] < 0) return false;
+  }
+  if (value.maxHp < 1 || value.hp > value.maxHp || !isCardInstanceList(value.deck)) return false;
+  if (!Array.isArray(value.relics) || !value.relics.every((id: unknown) => typeof id === 'string')) return false;
+  if (!isRecord(value.map) || value.map.regionId !== value.regionId || typeof value.map.seed !== 'string') return false;
+  if (!isRecord(value.map.nodes) || !Array.isArray(value.map.startNodeIds) || typeof value.map.bossNodeId !== 'string') return false;
+  if (!(value.map.currentNodeId === null || typeof value.map.currentNodeId === 'string')) return false;
+  if (!Object.values(value.map.nodes).every((node) => isRecord(node) && typeof node.id === 'string' && Array.isArray(node.connections))) return false;
+  if (value.activeCombatEncounterIds !== undefined && (!Array.isArray(value.activeCombatEncounterIds) || !value.activeCombatEncounterIds.every((id: unknown) => typeof id === 'string'))) return false;
+  if (value.activeCombatState !== undefined && !isCombatSnapshot(value.activeCombatState)) return false;
+  return true;
+}
+
 function migrateAndSanitize(raw: unknown): SaveDataV1 {
   const fallback = createDefaultSaveData();
   if (!raw || typeof raw !== 'object') return fallback;
@@ -224,7 +283,7 @@ function migrateAndSanitize(raw: unknown): SaveDataV1 {
     defeatedLegendaries: Array.isArray(data.defeatedLegendaries) ? data.defeatedLegendaries : [],
     defeatedSecretBosses: Array.isArray(data.defeatedSecretBosses) ? data.defeatedSecretBosses : [],
     unlockedQuestCards: Array.isArray(data.unlockedQuestCards) ? data.unlockedQuestCards : [],
-    activeRun: data.activeRun && typeof data.activeRun === 'object' ? data.activeRun : null,
+    activeRun: isValidRunState(data.activeRun) ? data.activeRun : null,
     totalVictories: typeof data.totalVictories === 'number' ? data.totalVictories : 0,
     totalRuns: typeof data.totalRuns === 'number' ? data.totalRuns : 0,
   };
