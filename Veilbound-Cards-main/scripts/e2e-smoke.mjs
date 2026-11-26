@@ -11,6 +11,19 @@ try {
   const response = await desktop.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
   assert.equal(response?.status(), 200, 'production page should load successfully');
   await desktop.getByRole('heading', { name: 'Veilbound: Ashen Crown' }).waitFor();
+
+  // Confirm the installed-app worker controls the page and can serve the app offline.
+  await desktop.waitForFunction(async () =>
+    (await navigator.serviceWorker.getRegistrations()).length > 0
+  );
+  await desktop.evaluate(() => navigator.serviceWorker.ready);
+  await desktop.reload({ waitUntil: 'networkidle' });
+  await desktop.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  await desktop.context.setOffline(true);
+  await desktop.reload({ waitUntil: 'domcontentloaded' });
+  await desktop.getByRole('heading', { name: 'Veilbound: Ashen Crown' }).waitFor();
+  await desktop.context.setOffline(false);
+
   await desktop.getByRole('button', { name: 'Begin Expedition' }).click();
   await desktop.getByRole('heading', { name: 'Prepare Expedition' }).waitFor();
   await desktop.getByRole('button', { name: 'Embark on Expedition' }).click();
@@ -59,6 +72,16 @@ try {
     document.documentElement.scrollWidth > document.documentElement.clientWidth
   );
   assert.equal(selectionOverflow, false, 'character selection should not overflow horizontally on a phone-sized viewport');
+  await mobile.getByRole('button', { name: 'Embark on Expedition' }).click();
+  await mobile.getByText(/Nodes Cleared:/).waitFor();
+  const mobileWestVanguard = mobile.getByRole('button', { name: 'West Vanguard (Reachable)' });
+  await mobileWestVanguard.click();
+  await mobileWestVanguard.click();
+  await mobile.getByRole('button', { name: 'End Turn' }).waitFor();
+  const combatOverflow = await mobile.evaluate(() =>
+    document.documentElement.scrollWidth > document.documentElement.clientWidth
+  );
+  assert.equal(combatOverflow, false, 'combat screen should not overflow horizontally on a phone-sized viewport');
 
   assert.deepEqual(failures, [], 'the app should not throw uncaught browser errors during the smoke flow');
   console.log('Browser smoke test passed: desktop start/resume, mobile menu/selection, no uncaught page errors.');
