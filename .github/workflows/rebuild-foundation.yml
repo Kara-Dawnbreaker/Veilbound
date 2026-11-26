@@ -1,0 +1,40 @@
+name: Veilbound Rebuild Foundation
+
+on:
+  push:
+    branches:
+      - rebuild/veilbound-from-zero
+    paths:
+      - 'rebuild-app/**'
+      - 'docs/rebuild/**'
+      - '.github/workflows/rebuild-foundation.yml'
+  pull_request:
+    branches:
+      - rebuild/veilbound-from-zero
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    name: Typecheck, tests and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild-app
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run foundation tests
+        run: npm test
+      - name: Build production bundle
+        run: npm run build
