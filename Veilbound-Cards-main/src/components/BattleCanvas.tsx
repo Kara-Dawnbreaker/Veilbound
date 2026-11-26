@@ -97,6 +97,9 @@ export function BattleCanvas({
 
     gameRef.current = game;
 
+    let disposed = false;
+    let attachedCanvas: HTMLCanvasElement | null = null;
+
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       const message = 'Graphics context lost while rendering the battlefield.';
@@ -105,8 +108,10 @@ export function BattleCanvas({
     };
 
     const attachCanvasHandlers = () => {
+      if (disposed || attachedCanvas) return;
       const canvas = game.canvas;
       if (!canvas) return;
+      attachedCanvas = canvas;
       canvas.style.display = 'block';
       canvas.style.width = '100%';
       canvas.style.height = '100%';
@@ -163,12 +168,13 @@ export function BattleCanvas({
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      disposed = true;
+      game.events.off(Phaser.Core.Events.READY, attachCanvasHandlers);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.clearTimeout(watchdogId);
       resizeObserver?.disconnect();
-      if (game.canvas) {
-        game.canvas.removeEventListener('webglcontextlost', handleContextLost);
-      }
+      attachedCanvas?.removeEventListener('webglcontextlost', handleContextLost);
+      attachedCanvas = null;
       gameRef.current = null;
       phaserBridge.clearSyncListeners();
       phaserBridge.clearDiagnostics();
