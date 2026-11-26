@@ -268,6 +268,13 @@ class AudioEngine {
   updateSettings(next: GameSettings): void {
     this.settings = { ...next };
     this.applyVolumes();
+
+    // If the user unmutes after returning from a backgrounded tab, resume the
+    // existing context from this settings interaction instead of waiting for
+    // an unrelated later sound effect to unlock it.
+    if (!this.settings.muted && this.ctx?.state === 'suspended') {
+      void this.ctx.resume().catch(() => undefined);
+    }
   }
 
   private applyVolumes(): void {
