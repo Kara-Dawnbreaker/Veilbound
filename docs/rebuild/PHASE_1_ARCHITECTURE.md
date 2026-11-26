@@ -63,3 +63,11 @@ Old production saves are not assumed to be compatible. A deliberate import/migra
 ## 7. Deliberate non-goals
 
 No hero selection, map generation, card effects, combat engine, enemy AI, shops, events, progression systems, final art, or audio are implemented in this phase.
+
+## 8. Implementation snapshot
+
+The initial foundation workspace now contains the app shell, typed state reducer, keyboard escape navigation, versioned profile/settings save storage, save migration and validation, focused unit tests, responsive base styling, and a branch-specific GitHub Actions workflow.
+
+The original app remains in its existing reference folder and has not been imported into the new workspace. The new app lives independently in `rebuild-app/`.
+
+The workflow is configured to run type-checking, tests, and a production build. Phase 1 is not considered complete until those checks have actually completed successfully and the shell has been reviewed at desktop and narrow mobile sizes.
