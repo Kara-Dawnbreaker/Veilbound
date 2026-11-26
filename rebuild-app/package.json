@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/domain/state.test.ts src/platform/persistence/saveRepository.test.ts",
+    "test": "tsx --test src/domain/state.test.ts src/platform/persistence/saveRepository.test.ts src/platform/input/keyboard.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
