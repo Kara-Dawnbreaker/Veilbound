@@ -945,6 +945,8 @@ export interface RunState {
   map: ExpeditionMap;
   currentScreen: ScreenId;
   activeCombatEncounterIds?: string[];
+  /** Exact in-progress encounter snapshot, used to resume without rerolling combat. */
+  activeCombatState?: CombatState;
   activeCombatModifier?: CombatModifierId;
   activeIsBoss?: boolean;
   activeIsElite?: boolean;
