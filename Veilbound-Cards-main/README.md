@@ -24,10 +24,10 @@ bun run build
 ```
 
 - `lint` runs the TypeScript compiler without emitting files.
-- `test` runs deterministic RNG and procedural map regression tests.
+- `test` runs RNG, procedural map, and save/recovery regression tests.
 - `build` creates the production bundle in `dist/`.
 
-GitHub Actions runs the same checks for pushes and pull requests targeting `main` or `maintenance/veilbound-stability`.
+GitHub Actions runs these checks plus Chromium browser tests for desktop start/resume, combat restoration after refresh, phone-sized layouts, and offline PWA launch. Checks run for pushes and pull requests targeting `main` or `maintenance/veilbound-stability`.
 
 ## Save data
 
