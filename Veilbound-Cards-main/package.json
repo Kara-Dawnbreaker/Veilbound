@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/engine/rng.test.ts src/engine/mapGenerator.test.ts"
+    "test": "tsx --test src/engine/rng.test.ts src/engine/mapGenerator.test.ts src/engine/saveManager.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
