@@ -1,0 +1,31 @@
+name: Veilbound quality checks
+
+on:
+  push:
+    branches:
+      - main
+      - maintenance/veilbound-stability
+  pull_request:
+    branches:
+      - main
+      - maintenance/veilbound-stability
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Veilbound-Cards-main
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Type-check
+        run: bun run lint
+      - name: Run regression tests
+        run: bun run test
+      - name: Build production bundle
+        run: bun run build
