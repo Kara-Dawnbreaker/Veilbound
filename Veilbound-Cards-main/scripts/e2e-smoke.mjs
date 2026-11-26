@@ -25,6 +25,22 @@ try {
   await desktop.getByRole('button', { name: 'Resume Run' }).click();
   await desktop.getByText(/Nodes Cleared:/).waitFor();
 
+  // Enter a guaranteed first-row combat node, advance one turn, then verify
+  // that the exact in-progress combat snapshot survives a browser refresh.
+  await desktop.getByRole('button', { name: 'West Vanguard (Reachable)' }).click();
+  await desktop.getByRole('button', { name: 'End Turn' }).waitFor();
+  await desktop.getByRole('button', { name: 'End Turn' }).click();
+  await desktop.getByText('Turn 2').waitFor();
+  const hpBeforeReload = await desktop.getByText(/^HP \\d+\\/\\d+$/).first().innerText();
+
+  await desktop.reload({ waitUntil: 'networkidle' });
+  await desktop.getByRole('button', { name: 'Resume Run' }).waitFor();
+  await desktop.getByRole('button', { name: 'Resume Run' }).click();
+  await desktop.getByRole('button', { name: 'End Turn' }).waitFor();
+  await desktop.getByText('Turn 2').waitFor();
+  const hpAfterReload = await desktop.getByText(/^HP \\d+\\/\\d+$/).first().innerText();
+  assert.equal(hpAfterReload, hpBeforeReload, 'combat HP and turn should be restored after refresh');
+
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   mobile.on('pageerror', (error) => failures.push(error.message));
   await mobile.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
