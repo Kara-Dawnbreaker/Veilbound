@@ -173,10 +173,27 @@ function isValidRunState(value: unknown): value is RunState {
   if (!isRecord(value.map) || value.map.regionId !== value.regionId || typeof value.map.seed !== 'string') return false;
   if (!isRecord(value.map.nodes) || !Array.isArray(value.map.startNodeIds) || typeof value.map.bossNodeId !== 'string') return false;
   if (!(value.map.currentNodeId === null || typeof value.map.currentNodeId === 'string')) return false;
-  if (!Object.values(value.map.nodes).every((node) => isRecord(node) && typeof node.id === 'string' && Array.isArray(node.connections))) return false;
+  if (!Object.values(value.map.nodes).every((node) =>
+    isRecord(node) && typeof node.id === 'string' && Array.isArray(node.connections) &&
+    node.connections.every((id: unknown) => typeof id === 'string' && Boolean(value.map.nodes[id]))
+  )) return false;
+  if (!value.map.nodes[value.map.bossNodeId]) return false;
+  if (!value.map.startNodeIds.length || !value.map.startNodeIds.every((id: unknown) => typeof id === 'string' && Boolean(value.map.nodes[id]))) return false;
+  if (typeof value.map.currentNodeId === 'string' && !value.map.nodes[value.map.currentNodeId]) return false;
+  if (value.currentScreen === 'COMBAT' && (!Array.isArray(value.activeCombatEncounterIds) || value.activeCombatEncounterIds.length === 0)) return false;
   if (value.activeCombatEncounterIds !== undefined && (!Array.isArray(value.activeCombatEncounterIds) || !value.activeCombatEncounterIds.every((id: unknown) => typeof id === 'string'))) return false;
-  if (value.activeCombatState !== undefined && !isCombatSnapshot(value.activeCombatState)) return false;
   return true;
+}
+
+function sanitizeRunState(value: unknown): RunState | null {
+  if (!isValidRunState(value)) return null;
+  if (value.activeCombatState !== undefined && !isCombatSnapshot(value.activeCombatState)) {
+    // Keep the valid expedition if only its combat snapshot is damaged. Continue
+    // can safely rebuild that encounter from its stored encounter definition.
+    const { activeCombatState: _discardedSnapshot, ...safeRun } = value;
+    return safeRun;
+  }
+  return value;
 }
 
 function migrateAndSanitize(raw: unknown): SaveDataV1 {
@@ -283,7 +300,7 @@ function migrateAndSanitize(raw: unknown): SaveDataV1 {
     defeatedLegendaries: Array.isArray(data.defeatedLegendaries) ? data.defeatedLegendaries : [],
     defeatedSecretBosses: Array.isArray(data.defeatedSecretBosses) ? data.defeatedSecretBosses : [],
     unlockedQuestCards: Array.isArray(data.unlockedQuestCards) ? data.unlockedQuestCards : [],
-    activeRun: isValidRunState(data.activeRun) ? data.activeRun : null,
+    activeRun: sanitizeRunState(data.activeRun),
     totalVictories: typeof data.totalVictories === 'number' ? data.totalVictories : 0,
     totalRuns: typeof data.totalRuns === 'number' ? data.totalRuns : 0,
   };
