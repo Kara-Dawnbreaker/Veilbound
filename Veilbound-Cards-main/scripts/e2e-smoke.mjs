@@ -89,7 +89,6 @@ try {
   await mobile.getByText(/Nodes Cleared:/).waitFor();
   const mobileWestVanguard = mobile.getByRole('button', { name: 'West Vanguard (Reachable)' });
   await mobileWestVanguard.click();
-  await mobileWestVanguard.click();
   await mobile.getByRole('button', { name: 'End Turn' }).waitFor();
   const combatOverflow = await mobile.evaluate(() =>
     document.documentElement.scrollWidth > document.documentElement.clientWidth
