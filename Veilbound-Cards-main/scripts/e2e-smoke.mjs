@@ -19,10 +19,23 @@ try {
   await desktop.evaluate(() => navigator.serviceWorker.ready);
   await desktop.reload({ waitUntil: 'networkidle' });
   await desktop.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
-  await desktop.context.setOffline(true);
+  const network = await desktop.context.newCDPSession(desktop);
+  await network.send('Network.enable');
+  await network.send('Network.emulateNetworkConditions', {
+    offline: true,
+    latency: 0,
+    downloadThroughput: -1,
+    uploadThroughput: -1,
+  });
   await desktop.reload({ waitUntil: 'domcontentloaded' });
   await desktop.getByRole('heading', { name: 'Veilbound: Ashen Crown' }).waitFor();
-  await desktop.context.setOffline(false);
+  await network.send('Network.emulateNetworkConditions', {
+    offline: false,
+    latency: 0,
+    downloadThroughput: -1,
+    uploadThroughput: -1,
+  });
+  await network.detach();
 
   await desktop.getByRole('button', { name: 'Begin Expedition' }).click();
   await desktop.getByRole('heading', { name: 'Prepare Expedition' }).waitFor();
