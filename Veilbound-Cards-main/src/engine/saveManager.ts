@@ -3,6 +3,7 @@
  * Cleanly separates permanent meta-progression, user settings, and temporary active run state.
  */
 
+import { CARDS } from '../data/cards';
 import { CHARACTERS } from '../data/characters';
 import { REGIONS } from '../data/regions';
 import type {
@@ -132,16 +133,27 @@ const VALID_SCREENS = new Set([
   'CAMP', 'COMPANION_ENCOUNTER', 'CURSED_ALTAR', 'CROSSROADS', 'RARE_ENCOUNTER', 'RUN_END',
 ]);
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 function isCardInstanceList(value: unknown): boolean {
   return Array.isArray(value) && value.every((card) =>
-    isRecord(card) && typeof card.uid === 'string' && typeof card.defId === 'string' &&
+    isRecord(card) &&
+    typeof card.uid === 'string' && card.uid.length > 0 &&
+    typeof card.defId === 'string' && Boolean(CARDS[card.defId]) &&
     typeof card.upgraded === 'boolean' &&
-    (card.costOverride === undefined || (typeof card.costOverride === 'number' && Number.isFinite(card.costOverride)))
+    (card.costOverride === undefined || (isFiniteNumber(card.costOverride) && card.costOverride >= 0))
   );
+}
+
+function isStatusMap(value: unknown): boolean {
+  return isRecord(value) && Object.values(value).every((amount) => isFiniteNumber(amount) && amount >= 0);
 }
 
 function isCombatSnapshot(value: unknown): value is CombatState {
   if (!isRecord(value)) return false;
+
   const numericFields = [
     'turn', 'playerHp', 'playerMaxHp', 'playerBlock', 'energy', 'maxEnergy',
     'nextTurnBonusEnergy', 'cardsPlayedThisTurn', 'attacksPlayedThisTurn',
@@ -149,13 +161,65 @@ function isCombatSnapshot(value: unknown): value is CombatState {
     'playerBlocksLastTurn', 'blockGainedThisTurn', 'alliesSlainCount',
     'heroAbilityCooldown', 'heroAbilityUsesLeft',
   ];
-  if (!numericFields.every((key) => typeof value[key] === 'number' && Number.isFinite(value[key]))) return false;
+  if (!numericFields.every((key) => isFiniteNumber(value[key]))) return false;
+  if (value.turn < 1 || value.playerMaxHp < 1 || value.playerHp < 0 || value.playerHp > value.playerMaxHp) return false;
+  if (['playerBlock', 'maxEnergy', 'nextTurnBonusEnergy', 'cardsPlayedThisTurn', 'attacksPlayedThisTurn',
+    'playerAttacksLastTurn', 'playerSkillsThisTurn', 'playerSkillsLastTurn', 'playerBlocksLastTurn',
+    'blockGainedThisTurn', 'alliesSlainCount', 'heroAbilityCooldown', 'heroAbilityUsesLeft'
+  ].some((key) => value[key] < 0)) return false;
+
   if (!['PLAYER_TURN', 'RESOLVING', 'ENEMY_TURN', 'VICTORY', 'DEFEAT'].includes(value.phase)) return false;
   if (!['neutral', 'bulwark', 'wrath', 'eclipse', 'alchemical'].includes(value.activeStance)) return false;
-  if (!['drawPile', 'hand', 'discardPile', 'exhaustPile', 'enemies', 'companions', 'activeTraps', 'activeReactions', 'delayedEffects', 'combatLog', 'pendingVisualEvents', 'activeTriggers'].every((key) => Array.isArray(value[key]))) return false;
-  if (!['playerStatuses'].every((key) => isRecord(value[key]))) return false;
-  if (!['isBoss', 'isElite', 'heroAbilityUpgraded', 'heroAbilityAlternate', 'passiveAmplified'].every((key) => typeof value[key] === 'boolean')) return false;
-  return ['drawPile', 'hand', 'discardPile', 'exhaustPile'].every((key) => isCardInstanceList(value[key]));
+  const arrayFields = [
+    'drawPile', 'hand', 'discardPile', 'exhaustPile', 'enemies', 'companions',
+    'activeTraps', 'activeReactions', 'delayedEffects', 'combatLog',
+    'pendingVisualEvents', 'activeTriggers',
+  ];
+  if (!arrayFields.every((key) => Array.isArray(value[key]))) return false;
+  if (!isStatusMap(value.playerStatuses)) return false;
+
+  if (!['isBoss', 'isElite', 'bloodChaliceUsedThisTurn', 'heroAbilityUpgraded',
+    'heroAbilityAlternate', 'passiveAmplified'
+  ].every((key) => typeof value[key] === 'boolean')) return false;
+  if (typeof value.heroAbilityId !== 'string' || !value.heroAbilityId) return false;
+  if (!(value.selectedEnemyUid === null || typeof value.selectedEnemyUid === 'string')) return false;
+  if (!(value.lastCardCategoryPlayed === null || typeof value.lastCardCategoryPlayed === 'string')) return false;
+  if (!value.combatLog.every((entry: unknown) => typeof entry === 'string')) return false;
+
+  if (!['drawPile', 'hand', 'discardPile', 'exhaustPile'].every((key) => isCardInstanceList(value[key]))) return false;
+  if (!value.enemies.every((enemy: unknown) =>
+    isRecord(enemy) &&
+    typeof enemy.uid === 'string' && typeof enemy.defId === 'string' &&
+    typeof enemy.name === 'string' &&
+    isFiniteNumber(enemy.hp) && isFiniteNumber(enemy.maxHp) && enemy.maxHp > 0 &&
+    enemy.hp >= 0 && enemy.hp <= enemy.maxHp &&
+    isFiniteNumber(enemy.block) && enemy.block >= 0 &&
+    isStatusMap(enemy.statuses) && isRecord(enemy.intent) &&
+    isFiniteNumber(enemy.phase) && enemy.phase >= 1 &&
+    typeof enemy.actedThisTurn === 'boolean'
+  )) return false;
+  if (!value.companions.every((companion: unknown) =>
+    isRecord(companion) && typeof companion.uid === 'string' &&
+    typeof companion.defId === 'string' && isFiniteNumber(companion.remainingTurns)
+  )) return false;
+  if (!value.activeTraps.every((trap: unknown) =>
+    isRecord(trap) && typeof trap.uid === 'string' &&
+    typeof trap.trapId === 'string' && isFiniteNumber(trap.charges)
+  )) return false;
+  if (!value.activeReactions.every((reaction: unknown) =>
+    isRecord(reaction) && typeof reaction.uid === 'string' &&
+    typeof reaction.reactionId === 'string'
+  )) return false;
+  if (!value.delayedEffects.every((effect: unknown) =>
+    isRecord(effect) && typeof effect.uid === 'string' &&
+    isFiniteNumber(effect.turnsRemaining) && Array.isArray(effect.effects)
+  )) return false;
+  if (!value.pendingVisualEvents.every((event: unknown) =>
+    isRecord(event) && typeof event.id === 'string' && typeof event.type === 'string'
+  )) return false;
+  if (value.selectedEnemyUid !== null && !value.enemies.some((enemy: { uid?: string }) => enemy.uid === value.selectedEnemyUid)) return false;
+
+  return true;
 }
 
 function isValidRunState(value: unknown): value is RunState {
