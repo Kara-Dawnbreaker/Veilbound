@@ -120,6 +120,7 @@ export default function App() {
   const [isResolvingTurn, setIsResolvingTurn] = useState(false);
   const [turnStepLabel, setTurnStepLabel] = useState<string | null>(null);
   const combatTimersRef = useRef<number[]>([]);
+  const pendingTerminalRestoreRef = useRef<CombatState | null>(null);
 
   const clearCombatTimers = useCallback(() => {
     for (const id of combatTimersRef.current) {
@@ -264,6 +265,7 @@ export default function App() {
   };
 
   const handleResetSave = () => {
+    pendingTerminalRestoreRef.current = null;
     clearCombatTimers();
     setIsResolvingTurn(false);
     setTurnStepLabel(null);
@@ -371,6 +373,7 @@ export default function App() {
     contractId?: string
   ) => {
     audioEngine.play('click');
+    pendingTerminalRestoreRef.current = null;
     const { nextSave } = startNewRun(save, characterId, regionId, difficulty, seed, contractId);
     persistSave(nextSave);
     setCombat(null);
@@ -383,6 +386,9 @@ export default function App() {
     const run = save.activeRun;
     if (run.currentScreen === 'COMBAT' && run.activeCombatEncounterIds) {
       if (run.activeCombatState) {
+        if (run.activeCombatState.phase === 'VICTORY' || run.activeCombatState.phase === 'DEFEAT') {
+          pendingTerminalRestoreRef.current = run.activeCombatState;
+        }
         setCombat(run.activeCombatState);
         setIsResolvingTurn(false);
         setTurnStepLabel(null);
@@ -740,14 +746,13 @@ export default function App() {
     if (!save.activeRun) return;
     const run = save.activeRun;
 
-    // Save every non-terminal combat action so refresh/close restores the same
-    // hand, piles, enemy HP/intents, energy, statuses, and turn counters.
-    if (nextCombat.phase !== 'VICTORY' && nextCombat.phase !== 'DEFEAT') {
-      persistSave({
-        ...save,
-        activeRun: { ...run, hp: nextCombat.playerHp, activeCombatState: nextCombat },
-      });
-    }
+    // Persist every combat result, including terminal states. If the page closes
+    // during the victory/defeat transition, Continue can finish that outcome
+    // instead of replaying the previous turn or losing the result.
+    persistSave({
+      ...save,
+      activeRun: { ...run, hp: nextCombat.playerHp, activeCombatState: nextCombat },
+    });
 
     if (nextCombat.phase === 'VICTORY') {
       const finishDelay = Math.max(700, maxDelayMs + COMBAT_TIMING.VICTORY_PADDING_MS * speedMult);
@@ -914,6 +919,13 @@ export default function App() {
       }
     }
   };
+
+  useEffect(() => {
+    const restoredTerminal = pendingTerminalRestoreRef.current;
+    if (!restoredTerminal || screen !== 'COMBAT' || combat !== restoredTerminal || !save.activeRun) return;
+    pendingTerminalRestoreRef.current = null;
+    processCombatResult(restoredTerminal, restoredTerminal, false);
+  }, [combat, screen, save.activeRun?.runId]);
 
   const handlePlayCard = (cardUid: string, targetUid: string | null) => {
     if (!combat || !save.activeRun || isResolvingTurn) return;
