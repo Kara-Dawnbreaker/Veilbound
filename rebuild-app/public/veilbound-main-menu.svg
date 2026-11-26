@@ -39,6 +39,14 @@
 <path d="M1198 526c-34 15-57 51-63 94l-10 91c-4 25-21 59-38 85 27 17 52 25 78 27 21-40 38-82 45-125l14-112-26-60Z" fill="#1d1a20"/>
 <path d="M1318 524c31 14 49 48 52 91l8 94c3 28 20 63 38 90-24 18-51 27-77 29-22-39-36-80-42-123l-12-115 33-66Z" fill="#15151b"/>
 <path d="M1160 783c-30 21-49 48-61 78M1380 790c29 20 50 46 63 76" stroke="#4b3c3b" stroke-opacity=".35" stroke-width="8"/>
+<!-- weathered longsword held low at the sentinel's side -->
+<g>
+  <path d="M1394 786 1410 778 1501 945 1487 955Z" fill="#77716a" opacity=".82"/>
+  <path d="M1401 790 1408 786 1493 947 1487 951Z" fill="#c0b7a5" opacity=".46"/>
+  <path d="M1381 776 1422 798 1417 808 1376 786Z" fill="#8c765b"/>
+  <path d="M1397 791 1406 796 1388 830 1379 825Z" fill="#30251f"/>
+  <path d="M1388 824 1395 829 1386 845 1379 840Z" fill="#a18b69"/>
+</g>
 <!-- warm distant embers -->
 <g fill="#c27a4e" opacity=".7"><circle cx="1050" cy="820" r="3"/><circle cx="1460" cy="760" r="2"/><circle cx="1110" cy="680" r="2"/><circle cx="1510" cy="880" r="3"/><circle cx="980" cy="900" r="2"/></g>
 <!-- vignette -->
