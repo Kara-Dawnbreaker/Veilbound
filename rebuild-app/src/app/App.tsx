@@ -26,7 +26,7 @@ function getInitialState() {
 }
 
 const screenLabels: Record<AppScreen, string> = {
-  'main-menu': 'Main menu',
+  'main-menu': 'Continue',
   sanctuary: 'Sanctuary',
   bestiary: 'Bestiary'
 };
@@ -47,9 +47,10 @@ export function App() {
   }, [state.settings, state.profile]);
 
   return (
-    <main className="app-shell">
-      <div className="ambient ambient-one" aria-hidden="true" />
-      <div className="ambient ambient-two" aria-hidden="true" />
+    <main className={`app-shell screen-${state.screen}`}>
+      <div className="scene-art" aria-hidden="true" />
+      <div className="scene-shade" aria-hidden="true" />
+      <div className="scene-grain" aria-hidden="true" />
 
       <header className="topbar">
         <a className="wordmark" href="#home" onClick={(event) => {
@@ -57,13 +58,70 @@ export function App() {
           navigate('main-menu');
         }}>
           <span className="wordmark-mark" aria-hidden="true">V</span>
-          <span>VEILBOUND</span>
+          <span className="wordmark-name">VEILBOUND</span>
+          <span className="wordmark-subtitle">ASHEN CROWN</span>
         </a>
-        <span className="topbar-caption">ASHEN CROWN <i /> REBUILD</span>
+        <div className="topbar-right">
+          <span className="world-status"><i /> THE VEIL IS QUIET</span>
+          <span className="profile-chip" aria-label={`${state.profile.soulShards} Soul Shards`}>
+            <span className="chip-rune">✧</span>
+            <strong>{state.profile.soulShards}</strong>
+            <span>SHARDS</span>
+          </span>
+        </div>
       </header>
 
       <section className="content-frame" aria-live="polite">
-        <nav className="side-nav" aria-label="Game sections">
+        <div className="hero-copy">
+          {state.screen === 'main-menu' && (
+            <>
+              <p className="eyebrow"><span /> A WORLD ON THE EDGE OF RUIN</p>
+              <h1>THE WORLD<br />HAS <em>FORGOTTEN</em><br />YOUR NAME.</h1>
+              <p className="intro-copy">
+                Beyond the veil lie fallen kingdoms, forgotten gods, and paths
+                that remember every choice. Your journey begins in the ashes.
+              </p>
+              <div className="menu-actions">
+                <button className="primary-button" onClick={() => navigate('sanctuary')}>
+                  <span className="button-mark">✦</span>
+                  <span>ENTER THE SANCTUARY</span>
+                  <span className="button-arrow">↗</span>
+                </button>
+                <button className="secondary-button" onClick={() => navigate('bestiary')}>
+                  <span className="secondary-dash" />
+                  EXPLORE THE BESTIARY
+                </button>
+              </div>
+              <div className="chapter-note">
+                <span className="chapter-line" />
+                <span>CHAPTER I</span>
+                <span className="chapter-separator">/</span>
+                <span>THE ASHEN CROWN</span>
+              </div>
+            </>
+          )}
+
+          {state.screen === 'sanctuary' && (
+            <div className="subscreen-copy">
+              <p className="eyebrow"><span /> THE LAST PLACE OF REFUGE</p>
+              <h1>THE<br /><em>SANCTUARY.</em></h1>
+              <p className="intro-copy">A fragile refuge at the edge of a broken world. Here, your legacy will take shape as the journey grows.</p>
+              <button className="secondary-button return-button" onClick={() => navigate('main-menu')}>← RETURN TO THE MAIN MENU</button>
+            </div>
+          )}
+
+          {state.screen === 'bestiary' && (
+            <div className="subscreen-copy">
+              <p className="eyebrow"><span /> FRAGMENTS OF THE KNOWN WORLD</p>
+              <h1>THE<br /><em>BESTIARY.</em></h1>
+              <p className="intro-copy">A record of the creatures, legends, and forgotten things waiting beyond the veil.</p>
+              <button className="secondary-button return-button" onClick={() => navigate('main-menu')}>← RETURN TO THE MAIN MENU</button>
+            </div>
+          )}
+        </div>
+
+        <nav className="main-nav" aria-label="Game sections">
+          <p className="nav-heading">YOUR JOURNEY</p>
           {(Object.keys(screenLabels) as AppScreen[]).map((screen) => (
             <button
               className={state.screen === screen ? 'nav-item active' : 'nav-item'}
@@ -71,80 +129,26 @@ export function App() {
               onClick={() => navigate(screen)}
               aria-current={state.screen === screen ? 'page' : undefined}
             >
-              <span className="nav-dot" />
-              {screenLabels[screen]}
+              <span className="nav-indicator" />
+              <span>{screenLabels[screen]}</span>
+              {screen === 'main-menu' && <span className="nav-key">ESC</span>}
             </button>
           ))}
+          <div className="nav-divider" />
+          <p className="nav-caption">THE FIRST EMBERS ARE KINDLING</p>
         </nav>
 
-        <section className="main-panel">
-          {state.screen === 'main-menu' && (
-            <div className="welcome-panel">
-              <p className="eyebrow">A WORLD THAT REMEMBERS</p>
-              <h1>Beyond the veil,<br /><em>the journey begins.</em></h1>
-              <p className="intro-copy">
-                A new foundation is taking shape for a dark-fantasy journey of
-                heroes, branching expeditions, and tactical card battles.
-              </p>
-              <div className="action-row">
-                <button className="primary-button" onClick={() => navigate('sanctuary')}>
-                  Enter the Sanctuary <span aria-hidden="true">↗</span>
-                </button>
-                <button className="quiet-button" onClick={() => navigate('bestiary')}>
-                  View the Bestiary
-                </button>
-              </div>
-              <div className="foundation-note">
-                <span className="status-orb" />
-                <span>Foundation online</span>
-                <span className="note-divider">/</span>
-                <span>Gameplay systems arrive in later phases</span>
-              </div>
-            </div>
-          )}
-
-          {state.screen === 'sanctuary' && (
-            <div className="placeholder-panel">
-              <p className="eyebrow">THE LAST PLACE OF REFUGE</p>
-              <h1>The Sanctuary</h1>
-              <p className="intro-copy">
-                This hub will connect hero mastery, Soul Shards, quests, and
-                the persistent world. Its systems are scheduled for later phases.
-              </p>
-              <button className="quiet-button" onClick={() => navigate('main-menu')}>Return to menu</button>
-            </div>
-          )}
-
-          {state.screen === 'bestiary' && (
-            <div className="placeholder-panel">
-              <p className="eyebrow">FRAGMENTS OF THE KNOWN WORLD</p>
-              <h1>The Bestiary</h1>
-              <p className="intro-copy">
-                Discoveries, enemies, and secrets will be recorded here once
-                the expedition and content systems are built.
-              </p>
-              <button className="quiet-button" onClick={() => navigate('main-menu')}>Return to menu</button>
-            </div>
-          )}
-        </section>
-
-        <aside className="profile-panel" aria-label="Profile overview">
-          <p className="eyebrow">YOUR LEGACY</p>
-          <div className="shard-count">
-            <span className="shard-symbol" aria-hidden="true">✧</span>
-            <strong>{state.profile.soulShards}</strong>
-          </div>
-          <span className="profile-label">Soul Shards</span>
-          <div className="profile-divider" />
-          <p className="profile-label">Available heroes</p>
-          <strong className="profile-value">{state.profile.unlockedHeroIds.length}</strong>
-          <p className="profile-footnote">Your progress is saved on this device.</p>
-        </aside>
+        <div className="scene-caption">
+          <span className="caption-rule" />
+          <span>THE FORGOTTEN KINGDOMS</span>
+          <span className="caption-coordinates">01 — 07</span>
+        </div>
       </section>
 
       <footer className="footer">
-        <span>VEILBOUND: ASHEN CROWN</span>
-        <span>FOUNDATION BUILD · PHASE 1</span>
+        <span>VEILBOUND <i>·</i> ASHEN CROWN</span>
+        <span className="footer-center">A JOURNEY THROUGH THE VEIL</span>
+        <span>FOUNDATION BUILD <i>·</i> PHASE 1</span>
       </footer>
     </main>
   );
