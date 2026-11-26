@@ -264,8 +264,10 @@ export function loadSaveData(): SaveDataV1 {
       return backupSave;
     }
 
+    // If neither stored copy can be recovered, persist a fresh save so the
+    // next launch does not repeat recovery against the same broken data.
     const fresh = createDefaultSaveData();
-    if (!raw) saveGameData(fresh);
+    saveGameData(fresh);
     return fresh;
   } catch {
     return createDefaultSaveData();
