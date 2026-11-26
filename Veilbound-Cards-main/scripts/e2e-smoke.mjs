@@ -35,14 +35,14 @@ try {
     const saved = JSON.parse(localStorage.getItem('veilbound_ashen_crown_save') ?? 'null');
     return saved?.activeRun?.activeCombatState?.turn === 2;
   });
-  const hpBeforeReload = await desktop.getByText(/^HP \\d+\\/\\d+$/).first().innerText();
+  const hpBeforeReload = await desktop.getByText((text) => text.startsWith('HP ') && text.includes('/')).first().innerText();
 
   await desktop.reload({ waitUntil: 'networkidle' });
   await desktop.getByRole('button', { name: 'Resume Run' }).waitFor();
   await desktop.getByRole('button', { name: 'Resume Run' }).click();
   await desktop.getByRole('button', { name: 'End Turn' }).waitFor();
   await desktop.getByText('Turn 2').waitFor();
-  const hpAfterReload = await desktop.getByText(/^HP \\d+\\/\\d+$/).first().innerText();
+  const hpAfterReload = await desktop.getByText((text) => text.startsWith('HP ') && text.includes('/')).first().innerText();
   assert.equal(hpAfterReload, hpBeforeReload, 'combat HP and turn should be restored after refresh');
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
