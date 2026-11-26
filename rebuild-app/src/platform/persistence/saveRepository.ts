@@ -61,8 +61,8 @@ function normalizeProfile(value: unknown): PlayerProfile {
 }
 
 export function createSaveData(
-  settings: GameSettings,
-  profile: PlayerProfile,
+  settings: unknown,
+  profile: unknown,
   now = new Date()
 ): PersistedSave {
   return {
