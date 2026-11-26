@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="46%" r="54%">
+      <stop offset="0%" stop-color="#271D1A" />
+      <stop offset="55%" stop-color="#13151C" />
+      <stop offset="100%" stop-color="#0B0C10" />
+    </radialGradient>
+    <linearGradient id="goldGrad" x1="128" y1="96" x2="384" y2="396" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="45%" stop-color="#C89B3C" />
+      <stop offset="100%" stop-color="#854D0E" />
+    </linearGradient>
+    <linearGradient id="emberGrad" x1="256" y1="120" x2="256" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="60%" stop-color="#B91C1C" />
+      <stop offset="100%" stop-color="#450A0A" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bgGlow)" />
+  <circle cx="256" cy="256" r="184" stroke="#C89B3C" stroke-opacity="0.32" stroke-width="6" />
+  <circle cx="256" cy="256" r="160" stroke="#78350F" stroke-opacity="0.45" stroke-width="2" />
+  <!-- Veil Sword & Crown Emblem -->
+  <path d="M256 84 L282 146 L256 410 L230 146 Z" fill="url(#emberGrad)" stroke="#FDE68A" stroke-opacity="0.4" stroke-width="3" />
+  <path d="M126 308 L150 176 L208 232 L256 138 L304 232 L362 176 L386 308 Z" fill="url(#goldGrad)" stroke="#FEF08A" stroke-width="4" stroke-linejoin="round" />
+  <rect x="136" y="316" width="240" height="30" rx="8" fill="#1C1917" stroke="#C89B3C" stroke-width="5" />
+  <polygon points="256,222 278,256 256,290 234,256" fill="#F97316" stroke="#FEF08A" stroke-width="3" />
+  <circle cx="176" cy="272" r="9" fill="#EF4444" />
+  <circle cx="336" cy="272" r="9" fill="#EF4444" />
+</svg>
