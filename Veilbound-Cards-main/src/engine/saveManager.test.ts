@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CHARACTERS } from '../data/characters';
 import { REGIONS } from '../data/regions';
+import { initializeCombat } from './combatEngine';
 import { startNewRun } from './runManager';
 import {
   createDefaultSaveData,
@@ -82,6 +83,56 @@ test('damaged combat snapshot does not discard an otherwise valid run', () => {
   assert.ok(loaded.activeRun);
   assert.equal(loaded.activeRun?.activeCombatState, undefined);
   assert.equal(loaded.activeRun?.runId, run.runId);
+});
+
+test('future-version saves are preserved and never overwritten by this build', () => {
+  const futureSave = {
+    ...createDefaultSaveData(),
+    version: 99,
+    futureOnlyField: { keep: true },
+  };
+  const futureRaw = JSON.stringify(futureSave);
+  const storage = installMemoryStorage({
+    veilbound_ashen_crown_save: futureRaw,
+  });
+
+  const fallback = loadSaveData();
+  assert.equal(fallback.activeRun, null);
+  saveGameData({ ...fallback, soulShards: 999 });
+
+  assert.equal(storage.get('veilbound_ashen_crown_save'), futureRaw);
+});
+
+test('valid combat snapshot survives a complete save/load round trip', () => {
+  const save = createDefaultSaveData();
+  const { nextSave } = startNewRun(
+    save,
+    CHARACTERS[0].id,
+    REGIONS[0].id,
+    'standard',
+    'COMBAT-ROUND-TRIP'
+  );
+  const run = nextSave.activeRun!;
+  const combat = initializeCombat(
+    run,
+    ['ash_stalker'],
+    false,
+    false
+  );
+  const combatRun = {
+    ...run,
+    currentScreen: 'COMBAT' as const,
+    activeCombatEncounterIds: ['ash_stalker'],
+    activeCombatState: combat,
+  };
+  const completeSave = { ...nextSave, activeRun: combatRun };
+  installMemoryStorage({
+    veilbound_ashen_crown_save: JSON.stringify(completeSave),
+  });
+
+  const loaded = loadSaveData();
+  assert.ok(loaded.activeRun?.activeCombatState);
+  assert.deepEqual(loaded.activeRun?.activeCombatState, combat);
 });
 
 test('a previous valid primary save is retained as the backup', () => {
